@@ -36,6 +36,11 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        /**
+         * TODO ALLEN
+         * 1）依赖错误
+         * 2）版本管理
+         */
     }
 
     @Override

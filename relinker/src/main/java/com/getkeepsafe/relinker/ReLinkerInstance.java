@@ -201,8 +201,12 @@ public class ReLinkerInstance {
             // next statement, so its better to try twice.
         }
 
-        libraryLoader.loadPath(workaroundFile.getAbsolutePath());
-        loadedLibraries.add(library);
+        try{
+            libraryLoader.loadPath(workaroundFile.getAbsolutePath());
+            loadedLibraries.add(library);
+        } catch (UnsatisfiedLinkError e) {
+            Log.e("UnsatisfiedLinkError: "+library+".", e.getMessage(), e); //TODO ALLEN
+        }
         log("%s (%s) was re-linked!", library, version);
     }
 

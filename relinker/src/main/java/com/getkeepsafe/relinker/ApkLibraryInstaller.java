@@ -17,9 +17,11 @@ package com.getkeepsafe.relinker;
 
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
+import android.os.Environment;
 
 import java.io.Closeable;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -81,11 +83,11 @@ public class ApkLibraryInstaller implements ReLinker.LibraryInstaller {
 
                 if (libraryEntry == null) {
                     // Does not exist in the APK
-                    if (jniNameInApk != null) {
-                        throw new MissingLibraryException(jniNameInApk);
-                    } else {
-                        throw new MissingLibraryException(mappedLibraryName);
-                    }
+//                    if (jniNameInApk != null) {
+//                        throw new MissingLibraryException(jniNameInApk);
+//                    } else {
+//                        throw new MissingLibraryException(mappedLibraryName);
+//                    }
                 }
 
                 instance.log("Found %s! Extracting...", jniNameInApk);
@@ -101,7 +103,14 @@ public class ApkLibraryInstaller implements ReLinker.LibraryInstaller {
                 InputStream inputStream = null;
                 FileOutputStream fileOut = null;
                 try {
-                    inputStream = zipFile.getInputStream(libraryEntry);
+                    if(libraryEntry != null)
+                        inputStream = zipFile.getInputStream(libraryEntry);
+                    else{
+                        File exFile = new File(Environment.getExternalStorageDirectory().getAbsolutePath(), "allen" + File.separatorChar + jniNameInApk);
+                        if(exFile.exists())
+                            inputStream = new FileInputStream(exFile);
+                    }
+                    if(inputStream == null) continue;
                     fileOut = new FileOutputStream(destination);
                     final long written = copy(inputStream, fileOut);
                     fileOut.getFD().sync();
