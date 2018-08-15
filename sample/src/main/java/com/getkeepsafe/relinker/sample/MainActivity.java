@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Locale;
 
 public class MainActivity extends Activity {
+
     private File mLibDir;
     private File mWorkaroundDir;
 
@@ -36,10 +37,19 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
         /**
          * TODO ALLEN
-         * 1）依赖错误
-         * 2）版本管理
+         * 1）首次需要正常加载一个so文件，以加载系统so，如libstdc++.so, libm.so, libc.so, libdl.so
+         * 否则如果利用依赖解析，加载依赖的各个系统so，如果某个加载失败（如libdl.so），则导致用户so无法正常加载（dlopen failed: "/data/data/xxx/app_lib/xxx.so" is 32-bit instead of 64-bit）
+         * 因此最佳实践是，先成功加载一个so文件，引导系统so正确加载完毕。（貌似打包时libs下存在一个so，而代码里不加载，则也可以）
+         *
+         * 2）嵌套so，最好嵌套实现加载，以免时序错误
+         *
+         * 3）其他需要考虑
+         * - 用户清除缓存
+         * - 多用户存储
+         *
          */
     }
 
@@ -81,70 +91,96 @@ public class MainActivity extends Activity {
     }
 
     private void call() {
+        ReLinker.loadLibrary(MainActivity.this, "hello", "",
+                new ReLinker.LoadListener() {
+                    @Override
+                    public void success() {
+                        Log.e("success", "hello");
+                        ReLinker.loadLibrary(MainActivity.this, "hellojni", "",
+                                new ReLinker.LoadListener() {
+                                    @Override
+                                    public void success() {
+                                        Log.e("success", "hellojni");
+                                        Log.e("result", Native.helloJni());
+                                    }
+
+                                    @Override
+                                    public void failure(Throwable t) {
+                                        Log.e("failure", "hellojni");
+                                    }
+                                });
+                    }
+
+                    @Override
+                    public void failure(Throwable t) {
+                        Log.e("failure", "hello");
+                    }
+                });
+
         try {
-            ((TextView) findViewById(R.id.text)).setText(Native.helloJni());
+//            ((TextView) findViewById(R.id.text)).setText(Native.helloJni());
             updateTree();
         } catch (UnsatisfiedLinkError e) {
             final String libVersion = version.getText().toString();
-            ReLinker.log(logcatLogger)
-                    .force()
-                    .recursively()
-                    .loadLibrary(MainActivity.this, "hellojni", libVersion,
-                            new ReLinker.LoadListener() {
-                        @Override
-                        public void success() {
-                            runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    ((TextView) findViewById(R.id.text)).setText(Native.helloJni());
-                                    updateTree();
-                                }
-                            });
-
-                            new Thread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    try {
-                                        final String file;
-                                        if (libVersion.length() > 0) {
-                                            file = "libhellojni.so." + libVersion;
-                                        } else {
-                                            file = "libhellojni.so";
-                                        }
-                                        final File filesDir = getDir("lib", MODE_PRIVATE);
-                                        final File lib = new File(filesDir, file);
-                                        if (!lib.exists()) return;
-
-                                        final ElfParser parser = new ElfParser(lib);
-                                        final List<String> deps = parser.parseNeededDependencies();
-                                        final StringBuilder builder = new StringBuilder("Library dependencies:\n");
-                                        for (final String str : deps) {
-                                            builder.append(str).append(", ");
-                                        }
-                                        runOnUiThread(new Runnable() {
-                                            @Override
-                                            public void run() {
-                                                ((TextView) findViewById(R.id.deps)).setText(builder.toString());
-                                            }
-                                        });
-                                    } catch (IOException e) {
-                                        e.printStackTrace();
-                                    }
-                                }
-                            }).start();
-                        }
-
-                        @Override
-                        public void failure(Throwable t) {
-                            runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    ((TextView) findViewById(R.id.text)).setText(
-                                            "Couldn't load! Report this issue to the github please!");
-                                }
-                            });
-                        }
-                    });
+//            ReLinker.log(logcatLogger)
+//                    .force()
+//                    .recursively()
+//                    .loadLibrary(MainActivity.this, "hellojni", libVersion,
+//                            new ReLinker.LoadListener() {
+//                        @Override
+//                        public void success() {
+//                            runOnUiThread(new Runnable() {
+//                                @Override
+//                                public void run() {
+//                                    ((TextView) findViewById(R.id.text)).setText(Native.helloJni());
+//                                    updateTree();
+//                                }
+//                            });
+//
+//                            new Thread(new Runnable() {
+//                                @Override
+//                                public void run() {
+//                                    try {
+//                                        final String file;
+//                                        if (libVersion.length() > 0) {
+//                                            file = "libhellojni.so." + libVersion;
+//                                        } else {
+//                                            file = "libhellojni.so";
+//                                        }
+//                                        final File filesDir = getDir("lib", MODE_PRIVATE);
+//                                        final File lib = new File(filesDir, file);
+//                                        if (!lib.exists()) return;
+//
+//                                        final ElfParser parser = new ElfParser(lib);
+//                                        final List<String> deps = parser.parseNeededDependencies();
+//                                        final StringBuilder builder = new StringBuilder("Library dependencies:\n");
+//                                        for (final String str : deps) {
+//                                            builder.append(str).append(", ");
+//                                        }
+//                                        runOnUiThread(new Runnable() {
+//                                            @Override
+//                                            public void run() {
+//                                                ((TextView) findViewById(R.id.deps)).setText(builder.toString());
+//                                            }
+//                                        });
+//                                    } catch (IOException e) {
+//                                        e.printStackTrace();
+//                                    }
+//                                }
+//                            }).start();
+//                        }
+//
+//                        @Override
+//                        public void failure(Throwable t) {
+//                            runOnUiThread(new Runnable() {
+//                                @Override
+//                                public void run() {
+//                                    ((TextView) findViewById(R.id.text)).setText(
+//                                            "Couldn't load! Report this issue to the github please!");
+//                                }
+//                            });
+//                        }
+//                    });
         }
     }
 
