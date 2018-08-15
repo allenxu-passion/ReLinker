@@ -3,20 +3,24 @@ package com.yixia.liblink;
 import android.os.Build;
 import android.text.TextUtils;
 
-final class LinkerLoaderImpl implements YZBLinker.LinkerLoader {
+class LinkerLoaderImpl implements YZBLinker.LinkerLoader {
 
     @Override
     public void loadLibrary(final String name) {
+        if(TextUtils.isEmpty(name)) return;
         System.loadLibrary(name);
     }
 
     @Override
     public void loadPath(final String path) {
+        if(TextUtils.isEmpty(path)) return;
         System.load(path);
     }
 
     @Override
     public String mapLibraryName(final String library) {
+        if(TextUtils.isEmpty(library))
+            return library;
         if (library.startsWith("lib") && library.endsWith(".so"))
             return library;
         return System.mapLibraryName(library);

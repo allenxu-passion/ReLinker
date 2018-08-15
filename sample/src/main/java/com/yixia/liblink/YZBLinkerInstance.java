@@ -11,7 +11,7 @@ public class YZBLinkerInstance {
     private static final String LIB_DIR = "yzblibs";//cache dir
     protected final YZBLinker.LinkerLoader linkerLoader;
     protected final YZBLinker.LinkerDownloader linkerDownloader;
-    protected final Set<String> loadedLibraries = new HashSet<String>();//loaded libraries
+    protected static final Set<String> loadedLibraries = new HashSet<String>();//loaded libraries
     private YZBLinker.LoadListener callback;
 
     protected YZBLinkerInstance() {
@@ -29,6 +29,11 @@ public class YZBLinkerInstance {
     }
 
     public void loadLibrary(final Context context,
+                            final String library) {
+        loadLibrary(context, library, null);
+    }
+
+    public void loadLibrary(final Context context,
                             final String library,
                             final YZBLinker.LoadListener listener) {
         if (context == null) {
@@ -40,7 +45,7 @@ public class YZBLinkerInstance {
         }
 
         callback = listener;
-        new Thread(new Runnable() {//TODO ALLEN 确认在这个线程中是否可以加载库
+        new Thread(new Runnable() {
             @Override
             public void run() {
                 if(callback == null) {
@@ -60,20 +65,23 @@ public class YZBLinkerInstance {
     }
 
     private boolean loadLibraryInternal(final Context context, final String library) {
-        if(loadedLibraries.contains(library)) return true;
+        if(loadedLibraries.contains(library))
+            return true;
 
         try {
             //try to load by system
             linkerLoader.loadLibrary(library);
             loadedLibraries.add(library);
             return true;
-        } catch (final UnsatisfiedLinkError e) {
+        } catch (final UnsatisfiedLinkError ignore) {
             //ignore
         }
 
         //can not load from apk
         final String libName = linkerLoader.mapLibraryName(library);
+        if(TextUtils.isEmpty(libName)) return false;
         final File libFile = new File(getLinkerCacheDir(context), libName);
+        if(libFile == null) return false;
         if(libFile.exists()) {
             //already cached then load
             linkerLoader.loadPath(libFile.getAbsolutePath());

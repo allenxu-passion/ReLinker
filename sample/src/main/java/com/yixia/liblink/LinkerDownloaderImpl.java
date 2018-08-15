@@ -2,6 +2,8 @@ package com.yixia.liblink;
 
 import android.content.Context;
 import android.os.Environment;
+import android.text.TextUtils;
+
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
@@ -11,7 +13,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-public class LinkerDownloaderImpl implements YZBLinker.LinkerDownloader {
+class LinkerDownloaderImpl implements YZBLinker.LinkerDownloader {
 
     @Override
     public void downloadLibrary(Context context,
@@ -19,6 +21,9 @@ public class LinkerDownloaderImpl implements YZBLinker.LinkerDownloader {
                                 String library,
                                 File destination,
                                 YZBLinker.DownloadListener listener) {
+        if(TextUtils.isEmpty(library) || destination == null || listener == null)
+            return;
+
         try {
             if (!destination.exists() && !destination.createNewFile()) {
                 return;
@@ -27,15 +32,14 @@ public class LinkerDownloaderImpl implements YZBLinker.LinkerDownloader {
             return;
         }
 
-        //safely download specific abi .so file to destination
-        //TODO
+        //TODO safely download lib to destination
 
 
         //test
         copyLibrary(abis, library, destination);
 
 
-        //after success then trigger load
+        //download success
         destination.setReadable(true, false);
         destination.setExecutable(true, false);
         destination.setWritable(true);

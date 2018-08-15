@@ -27,11 +27,6 @@ public class YZBLinker {
         void failure(Throwable t);
     }
 
-    public interface DownloadListener {
-        void success();
-        void failure(Throwable t);
-    }
-
     public interface LinkerLoader {
         void loadLibrary(String name);
         void loadPath(String path);
@@ -41,6 +36,11 @@ public class YZBLinker {
 
     public interface LinkerDownloader {
         void downloadLibrary(Context context, String[] abis, String mappedLibraryName, File destination, DownloadListener listener);
+    }
+
+    public interface DownloadListener {
+        void success();
+        void failure(Throwable t);
     }
 
 }
