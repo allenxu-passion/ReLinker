@@ -12,6 +12,7 @@ import android.widget.Toast;
 import com.getkeepsafe.relinker.ReLinker;
 import com.getkeepsafe.relinker.elf.Elf;
 import com.getkeepsafe.relinker.elf.ElfParser;
+import com.yixia.liblink.YZBLinker;
 
 import java.io.DataOutputStream;
 import java.io.File;
@@ -91,31 +92,56 @@ public class MainActivity extends Activity {
     }
 
     private void call() {
-        ReLinker.loadLibrary(MainActivity.this, "hello", "",
-                new ReLinker.LoadListener() {
+        YZBLinker.loadLibrary(MainActivity.this, "hello", new YZBLinker.LoadListener() {
+            @Override
+            public void success() {
+                Log.e("success", "hello");
+                YZBLinker.loadLibrary(MainActivity.this, "hellojni", new YZBLinker.LoadListener() {
                     @Override
                     public void success() {
-                        Log.e("success", "hello");
-                        ReLinker.loadLibrary(MainActivity.this, "hellojni", "",
-                                new ReLinker.LoadListener() {
-                                    @Override
-                                    public void success() {
-                                        Log.e("success", "hellojni");
-                                        Log.e("result", Native.helloJni());
-                                    }
-
-                                    @Override
-                                    public void failure(Throwable t) {
-                                        Log.e("failure", "hellojni");
-                                    }
-                                });
+                        Log.e("success", "hellojni");
+                        Log.e("result", Native.helloJni());
                     }
 
                     @Override
                     public void failure(Throwable t) {
-                        Log.e("failure", "hello");
+                        Log.e("failure", "hellojni");
                     }
                 });
+            }
+
+            @Override
+            public void failure(Throwable t) {
+                Log.e("failure", "hello");
+            }
+        });
+
+
+//        ReLinker.loadLibrary(MainActivity.this, "hello", "",
+//                new ReLinker.LoadListener() {
+//                    @Override
+//                    public void success() {
+//                        Log.e("success", "hello");
+//                        ReLinker.loadLibrary(MainActivity.this, "hellojni", "",
+//                                new ReLinker.LoadListener() {
+//                                    @Override
+//                                    public void success() {
+//                                        Log.e("success", "hellojni");
+//                                        Log.e("result", Native.helloJni());
+//                                    }
+//
+//                                    @Override
+//                                    public void failure(Throwable t) {
+//                                        Log.e("failure", "hellojni");
+//                                    }
+//                                });
+//                    }
+//
+//                    @Override
+//                    public void failure(Throwable t) {
+//                        Log.e("failure", "hello");
+//                    }
+//                });
 
         try {
 //            ((TextView) findViewById(R.id.text)).setText(Native.helloJni());
