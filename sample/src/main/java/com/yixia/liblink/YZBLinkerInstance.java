@@ -1,21 +1,21 @@
 package com.yixia.liblink;
 
-import android.content.Context;
-import android.text.TextUtils;
-
 import java.io.File;
-import java.util.HashSet;
 import java.util.Set;
+import java.util.HashSet;
+import android.text.TextUtils;
+import android.content.Context;
 
 public class YZBLinkerInstance {
 
-    private static final String LIB_DIR = "yzblibs";
+    private static final String LIB_DIR = "yzblibs";//cache dir
     protected final YZBLinker.LinkerLoader linkerLoader;
     protected final YZBLinker.LinkerDownloader linkerDownloader;
-    protected final Set<String> loadedLibraries = new HashSet<String>();
+    protected final Set<String> loadedLibraries = new HashSet<String>();//loaded libraries
+    private YZBLinker.LoadListener callback;
 
     protected YZBLinkerInstance() {
-        this(null,null);
+        this(new LinkerLoaderImpl(),new LinkerDownloaderImpl());
     }
 
     protected YZBLinkerInstance(final YZBLinker.LinkerLoader loader,
@@ -39,45 +39,70 @@ public class YZBLinkerInstance {
             throw new IllegalArgumentException("Can not fetch valid library name");
         }
 
-        if (listener == null) {
-            loadLibraryInternal(context, library);
-        } else {
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        loadLibraryInternal(context, library);
-                        listener.success();
-                    } catch (UnsatisfiedLinkError e) {
-                        listener.failure(e);
-                    } catch (Exception e) {
-                        listener.failure(e);
-                    }
+        callback = listener;
+        new Thread(new Runnable() {//TODO ALLEN 确认在这个线程中是否可以加载库
+            @Override
+            public void run() {
+                if(callback == null) {
+                    loadLibraryInternal(context, library);
+                    return;
                 }
-            }).start();
-        }
+                try {
+                    if(loadLibraryInternal(context, library))
+                        callback.success();
+                } catch (UnsatisfiedLinkError e) {
+                    callback.failure(e);
+                } catch (Exception e) {
+                    callback.failure(e);
+                }
+            }
+        }).start();
     }
 
-    private void loadLibraryInternal(final Context context, final String library) {
-        if(loadedLibraries.contains(library)) return;
+    private boolean loadLibraryInternal(final Context context, final String library) {
+        if(loadedLibraries.contains(library)) return true;
 
         try {
+            //try to load by system
             linkerLoader.loadLibrary(library);
             loadedLibraries.add(library);
-            return;
+            return true;
         } catch (final UnsatisfiedLinkError e) {
+            //ignore
         }
 
         //can not load from apk
         final String libName = linkerLoader.mapLibraryName(library);
         final File libFile = new File(getLinkerCacheDir(context), libName);
         if(libFile.exists()) {
-            //load
+            //already cached then load
             linkerLoader.loadPath(libFile.getAbsolutePath());
+            loadedLibraries.add(library);
         }else {
             //download then load
-            linkerDownloader.downloadLibrary(context, linkerLoader.supportedAbis(), linkerLoader.mapLibraryName(library), libFile);
+            linkerDownloader.downloadLibrary(context, linkerLoader.supportedAbis(), linkerLoader.mapLibraryName(library), libFile,
+                    new YZBLinker.DownloadListener() {
+
+                        @Override
+                        public void success() {
+                            //load from path again
+                            linkerLoader.loadPath(libFile.getAbsolutePath());
+                            loadedLibraries.add(library);
+                            //success
+                            if(callback != null)
+                                callback.success();
+                        }
+
+                        @Override
+                        public void failure(Throwable t) {
+                            //failure
+                            if(callback != null)
+                                callback.failure(t);
+                        }
+                    });
+            return false;
         }
+        return true;
     }
 
     private File getLinkerCacheDir(final Context context) {
