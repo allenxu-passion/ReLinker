@@ -10,8 +10,7 @@ import com.yixia.liblink.YZBLinker;
 public class MainActivity extends Activity {
 
     static {
-        Log.e("allentrack", "load hello from static");
-        System.loadLibrary("hello");
+        System.loadLibrary("hellojni");
     }
 
     @Override
@@ -36,7 +35,7 @@ public class MainActivity extends Activity {
         findViewById(R.id.call).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                loadLibrary();
+                loadLibraries();
             }
         });
 
@@ -49,20 +48,20 @@ public class MainActivity extends Activity {
         });
     }
 
-    private void loadLibrary() {
-        App.blockBlackList = false;
-        YZBLinker.loadLibrary(MainActivity.this, "hellojni", new YZBLinker.LoadListener() {
-            @Override
-            public void success() {
-                Log.e("allentrack", "load hellojni success");
-                App.blockBlackList = true;
-            }
+    private void loadLibraries() {
+        for(String lib:App.LIB_WHITE_LIST) {
+            final String toLoadLib = lib;
+            YZBLinker.loadLibrary(MainActivity.this, toLoadLib, new YZBLinker.LoadListener() {
+                @Override
+                public void success() {
+                    Log.e("allentrack", "load success : " + toLoadLib);
+                }
 
-            @Override
-            public void failure(Throwable t) {
-                Log.e("allentrack", "load hellojni fail");
-                App.blockBlackList = true;
-            }
-        });
+                @Override
+                public void failure(Throwable t) {
+                    Log.e("allentrack", "load fail : " + toLoadLib);
+                }
+            });
+        }
     }
 }

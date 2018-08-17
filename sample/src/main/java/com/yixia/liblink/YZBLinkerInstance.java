@@ -13,6 +13,7 @@ public class YZBLinkerInstance {
     protected final YZBLinker.LinkerDownloader linkerDownloader;
     protected static final Set<String> loadedLibraries = new HashSet<String>();//loaded libraries
     private YZBLinker.LoadListener callback;
+    public static boolean exception = false;//for test
 
     protected YZBLinkerInstance() {
         this(new LinkerLoaderImpl(),new LinkerDownloaderImpl());
@@ -70,7 +71,9 @@ public class YZBLinkerInstance {
 
         try {
             //try to load by system
+            exception = true;
             linkerLoader.loadLibrary(library);
+            exception = false;
             loadedLibraries.add(library);
             return true;
         } catch (final UnsatisfiedLinkError ignore) {
