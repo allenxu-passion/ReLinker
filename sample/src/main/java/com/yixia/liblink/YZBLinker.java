@@ -5,11 +5,6 @@ import android.content.Context;
 
 public class YZBLinker {
 
-    /**
-     * TODO ALLEN to think
-     * 1)库更新
-     */
-
     private YZBLinker() {}
 
     public static void loadLibrary(final Context context, final String library) {

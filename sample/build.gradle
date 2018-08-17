@@ -17,7 +17,7 @@ android {
     defaultConfig {
         applicationId "com.getkeepsafe.relinker.sample"
         //noinspection MinSdkTooLow
-        minSdkVersion 9
+        minSdkVersion 14
         targetSdkVersion 26
         versionCode 1
         versionName "1.0"
@@ -28,10 +28,19 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+
+    splits {
+        abi {
+            enable true
+            reset()
+            include 'armeabi-v7a'
+            universalApk false
+        }
+    }
 }
 
 dependencies {
-    compile project(':relinker')
     testCompile 'junit:junit:4.12'
+    compile 'me.weishu:epic:0.3.6'
 }
 
